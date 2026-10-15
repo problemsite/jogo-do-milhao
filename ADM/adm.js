@@ -93,7 +93,7 @@
     if (!s) return;
     const set = (id, v, ck) => { const e = $(id); if (document.activeElement === e) return; if (ck) e.checked = !!v; else e.value = v; };
     set('#sAdvance', s.advance); set('#sIntroAuto', s.introAuto, 1); set('#sSkip', s.skipAnim, 1); set('#sMute', s.mute, 1); set('#sCrit', s.crit !== false, 1);
-    set('#sSleep', s.sleepH); set('#sMaxAwake', s.maxAwakeH); set('#sFood', s.food); set('#lockMenu', s.lockMenu, 1);
+    set('#sCut', s.cutscene !== false, 1); set('#sSleep', s.sleepH); set('#sMaxAwake', s.maxAwakeH); set('#sFood', s.food); set('#lockMenu', s.lockMenu, 1);
   }
   function currentSettings() { return Object.assign({}, (ST && ST.settings) || {}, SETT || {}); }
   async function saveSettings(patch) { SETT = Object.assign(currentSettings(), patch); await NET.setSettings(SETT); msg('configuração salva'); }
@@ -128,8 +128,8 @@
   $('#resetCount').onclick = () => send('resetCount', $('#vCount').value);
   document.querySelectorAll('[data-asset]').forEach(c => c.addEventListener('change', () => send(c.checked ? 'giveAsset' : 'takeAsset', c.dataset.asset)));
   $('#lockMenu').onchange = e => saveSettings({ lockMenu: e.target.checked });
-  ['#sAdvance', '#sIntroAuto', '#sSkip', '#sMute', '#sCrit'].forEach(id => $(id).addEventListener('change', () => saveSettings({
-    advance: $('#sAdvance').value, introAuto: $('#sIntroAuto').checked, skipAnim: $('#sSkip').checked, mute: $('#sMute').checked, crit: $('#sCrit').checked
+  ['#sAdvance', '#sIntroAuto', '#sSkip', '#sMute', '#sCrit', '#sCut'].forEach(id => $(id).addEventListener('change', () => saveSettings({
+    cutscene: $('#sCut').checked, advance: $('#sAdvance').value, introAuto: $('#sIntroAuto').checked, skipAnim: $('#sSkip').checked, mute: $('#sMute').checked, crit: $('#sCrit').checked
   })));
   $('#saveSet').onclick = () => saveSettings({ sleepH: +$('#sSleep').value, maxAwakeH: +$('#sMaxAwake').value, food: +$('#sFood').value });
   $('#reset').onclick = () => { if (confirm('Resetar TUDO? Ele volta pro menu com R$ 1.')) send('reset'); };

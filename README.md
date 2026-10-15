@@ -10,6 +10,7 @@ Jogo de navegador para o vídeo do Problems. É o contrário do Gaste 1 Trilhão
 - `game.js`: tela, animações, slides, menu e introdução
 - `dinheiro.js`: onde o dinheiro aparece: **carteira** (até R$ 999), **mesa** (R$ 1 mil a 99 mil) e **celular com app do banco** (R$ 100 mil pra cima), com o Problems segurando a carteira/celular e reagindo
 - `mesa.js`: a mesa do dinheiro (notas, pacotinhos e maços de R$ 10 mil)
+- `cutscene.js`: o filminho de abertura (a carta da dívida)
 - `art.js`: ilustrações de cada ação
 - `problems.js`: o Problems de bloquinho (ciano, rosto do Problems0) em 3D, com poses: parado, apontando, uau, dando de ombros, olhando o relógio, preocupado, comemorando, triste
 - `cube.js`: sobrou do Trilhão (pode ficar)
@@ -51,7 +52,7 @@ Jogo de navegador para o vídeo do Problems. É o contrário do Gaste 1 Trilhão
 O ADM mostra essa rota com o próximo passo destacado.
 
 ## Durante a gravação
-- **Menu**: botão COMEÇAR → introdução animada (moeda, 7 dias, a meta, a escada do pouco ao muito, as regras) → as peças voam pro HUD e o mapa dá zoom no Rio.
+- **Menu**: botão COMEÇAR → **filminho da carta** (~32 s: o Problems anda pela rua com R$ 1 no bolso, um cobrador de terno entrega a carta da dívida do pai, R$ 1 milhão em 7 dias, ele surta; clique/espaço pula a cena, Esc ou "pular" pula o filme; dá pra desligar no ADM) → introdução animada (moeda, 7 dias, a meta, a escada do pouco ao muito, as regras) → as peças voam pro HUD e o mapa dá zoom no Rio.
 - Depois de cada ação a sequência roda como slides e **para até clicar ou apertar espaço/Enter** (ou ▸ AVANÇAR no ADM). Dá pra trocar pra automático no ADM.
 - Mapa: começa com zoom no Brasil. Roda do mouse dá zoom, arrastar move, ↺ volta, 🌎 mostra o mundo.
 - O canto de baixo à esquerda fica livre pra câmera.

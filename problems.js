@@ -32,6 +32,11 @@
       case 'celebrate': P.jump = Math.abs(sin(t * 6)) * 3.6; P.aLy = 2.7 + sin(t * 12) * 0.35; P.aRy = -2.7 - sin(t * 12 + Math.PI) * 0.35; P.lLx = sin(t * 12) * 0.35; P.lRx = -sin(t * 12) * 0.35; P.spark = true; break;
       case 'work': { const w = sin(t * 9); P.aLx = w * 0.9; P.aRx = -w * 0.9; P.lLx = -w * 0.45; P.lRx = w * 0.45; P.jump = Math.abs(sin(t * 9)) * 0.6; P.headX = -0.1; break; }
       case 'sell': P.aRy = -2.3 + sin(t * 10) * 0.35; P.aRx = 0.2; P.aLx = 0.9; P.aLy = -0.2; P.headZ = sin(t * 3) * 0.3; P.jump = Math.abs(sin(t * 5)) * 0.8; break;
+      case 'walk': { const w = sin(t * 7); P.aLx = w * 0.55; P.aRx = -w * 0.55; P.lLx = -w * 0.5; P.lRx = w * 0.5; P.jump = Math.abs(sin(t * 7)) * 0.35; break; }
+      case 'pocket': P.aLx = -0.25; P.aLy = 0.1; P.aRx = -0.3; P.aRy = -0.1; P.headX = -0.5; P.headZ = 0.3; break;
+      case 'hand': P.aRx = 1.35; P.aRy = 0.15; P.headX = -0.15; break;
+      case 'read': P.aLx = 1.2; P.aLy = -0.35; P.aRx = 1.2; P.aRy = 0.35; P.headX = -0.4; break;
+      case 'shock': { const k = Math.min(1, t * 3); P.aLy = 2.9 * k; P.aRy = -2.9 * k; P.aLx = 0.3; P.aRx = 0.3; P.headX = 0.35 * k; P.jump = Math.abs(sin(t * 18)) * 0.6 * (1 - Math.min(1, t / 3)); P.bodyTilt = -0.08 * k; break; }
       case 'sad': P.headX = -0.6; P.bodyTilt = -0.12; P.aLx = 0.15; P.aRx = 0.15; P.aLy = -0.06; P.aRy = 0.06; P.bob *= 0.3; break;
       default: P.aLx = sin(t * 2.2) * 0.07; P.aRx = -sin(t * 2.2) * 0.07; P.headZ = (t % 7) > 5.6 ? 0.45 : 0; break;
     }
@@ -118,9 +123,9 @@
     for (const f of faces) {
       const sp = f.pts.map(proj);
       ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
-      ctx.fillStyle = shade(f.lum); ctx.fill();
+      ctx.fillStyle = o.palette && o.palette[f.part.name] ? shadeC(o.palette[f.part.name], f.lum) : shade(f.lum); ctx.fill();
       ctx.strokeStyle = 'rgba(13,23,38,.55)'; ctx.lineWidth = lw; ctx.stroke();
-      if (f.part.extra && f.face.key === 'front') drawFace(ctx, f.pts, proj, P);
+      if (f.part.extra && f.face.key === 'front') (o.face === 'shades' ? drawShades : drawFace)(ctx, f.pts, proj, P);
     }
     // efeitos
     const headTop = proj(add(toWorld([0, 0, 33]), [0, 0, lift]));
@@ -144,6 +149,14 @@
     ctx.restore();
     const W2 = p => { const q = toWorld(p); q[2] += lift; return proj(q); };
     return { handL: W2(hL), handR: W2(hR), head: headTop, headSize: hs };
+  }
+  function shadeC(c, l) { const k = 0.45 + l * 0.6; return `rgb(${Math.min(255, Math.round(c[0] * k))},${Math.min(255, Math.round(c[1] * k))},${Math.min(255, Math.round(c[2] * k))})`; }
+  // rosto de "cobrador": óculos escuros e boca reta
+  function drawShades(ctx, pts, proj) {
+    const [p0, p1, p2, p3] = pts;
+    const at = (u, v) => { const a = u / 8, b = v / 8; const top = [p3[0] + (p2[0] - p3[0]) * a, p3[1] + (p2[1] - p3[1]) * a, p3[2] + (p2[2] - p3[2]) * a]; const bot = [p0[0] + (p1[0] - p0[0]) * a, p0[1] + (p1[1] - p0[1]) * a, p0[2] + (p1[2] - p0[2]) * a]; return proj([top[0] + (bot[0] - top[0]) * b, top[1] + (bot[1] - top[1]) * b, top[2] + (bot[2] - top[2]) * b]); };
+    const rect = (u, v, w, h) => { const q = [at(u, v), at(u + w, v), at(u + w, v + h), at(u, v + h)]; ctx.beginPath(); q.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); };
+    ctx.fillStyle = K; rect(1, 2.2, 6, 1.4); ctx.fillStyle = '#5a3b2a'; rect(2.5, 5.4, 3, 0.6); ctx.fillStyle = '#2b1c14'; rect(0, 0, 8, 1.1);
   }
   function shade(l) {
     // ciano: mistura entre sombra e luz

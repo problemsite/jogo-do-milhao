@@ -193,7 +193,7 @@
 .cal::before{content:'';position:absolute;left:0;right:0;top:0;height:46px;background:#00b6d6;border-bottom:7px solid #0d1726}
 .cal b{font:130px/1 var(--title);color:#0d1726;margin-top:40px}
 .cal span{font:30px var(--title);letter-spacing:.2em;color:#0d1726;margin-top:-6px}
-.goal{height:230px;display:grid;place-items:center;font:84px/1 var(--title);color:#4fd699;-webkit-text-stroke:4px #0d1726;paint-order:stroke fill;text-shadow:0 10px 0 #0d1726;white-space:nowrap;margin:0 -60px}
+.goal{height:230px;display:grid;place-items:center;font:84px/1 var(--title);color:#ff6b6b;-webkit-text-stroke:4px #0d1726;paint-order:stroke fill;text-shadow:0 10px 0 #0d1726;white-space:nowrap;margin:0 -60px}
 .i-steps{position:absolute;left:0;right:0;top:650px;display:flex;justify-content:center;align-items:center;gap:20px;opacity:0;transition:opacity .3s}
 .i-steps.in{opacity:1}
 .i-steps .st{width:100px;height:100px;border-radius:26px;background:#fff;border:5px solid #0d1726;display:grid;place-items:center;font-size:54px;opacity:0;transform:scale(0)}
@@ -229,3 +229,6 @@
 .hist-modal ol{flex:1;min-height:0}
 #banner{font-size:26px;max-width:1080px;overflow:hidden;text-overflow:ellipsis}
 #heroCv{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;z-index:8}
+.cut-cv{position:absolute;inset:0;width:1920px;height:1080px;display:block;background:#000}
+.cut-skip{position:absolute;right:40px;bottom:130px;z-index:2;color:rgba(255,255,255,.55);font:800 18px var(--font);letter-spacing:.08em;cursor:pointer;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+.cut-skip:hover{color:#fff;border-color:#fff}

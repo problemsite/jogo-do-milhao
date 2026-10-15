@@ -1134,12 +1134,17 @@
     menu.classList.add('hidden');
     S.started = true; save();
     const I = $('#intro');
+    // mini filme: a carta da dívida
+    I.innerHTML = ''; I.classList.remove('hidden', 'out', 'light');
+    setScreen('intro', 'Cutscene: a carta da dívida');
+    if (window.CUTSCENE && SET.cutscene !== false) await CUTSCENE.play(I, { tone, noise, font: FONT, title: "'Lilita One', " + FONT, skip: SET.skipAnim });
+    if (run !== introRun) return;
     I.innerHTML = `<div class="i-bg"></div>
-      <div class="i-top" id="iTop">VOCÊ COMEÇA COM</div>
+      <div class="i-top" id="iTop">NO BOLSO</div>
       <div class="i-row">
         <div class="i-card" id="iCoin"><div class="coin"><span>1</span></div><div class="cap">R$ 1</div></div>
-        <div class="i-card" id="iClock"><div class="cal"><b>7</b><span>DIAS</span></div><div class="cap">pra fazer isso</div></div>
-        <div class="i-card" id="iGoal"><div class="goal">R$ 1.000.000</div><div class="cap">virar UM MILHÃO</div></div>
+        <div class="i-card" id="iClock"><div class="cal"><b>7</b><span>DIAS</span></div><div class="cap">de prazo</div></div>
+        <div class="i-card" id="iGoal"><div class="goal">R$ 1.000.000</div><div class="cap">a dívida do pai</div></div>
       </div>
       <div class="i-steps" id="iSteps">${['🥫', '🧊', '🛍️', '🛒', '🚢', '💼'].map((e, i) => `${i ? '<span class="arr">→</span>' : ''}<span class="st">${e}</span>`).join('')}</div>
       <div class="i-sub" id="iSub">do pouco ao muito · tudo com preço e tempo de verdade</div>
@@ -1159,9 +1164,9 @@
     await introBeat(900); if (run !== introRun) return;
     impact(q('#iCoin'), 16, '#f2c94c'); SFX.coin();
     await introBeat(1400); if (run !== introRun) return;
-    q('#iTop').textContent = 'VOCÊ TEM'; impact(q('#iClock'), 14, '#00b6d6');
+    q('#iTop').textContent = 'O PRAZO'; impact(q('#iClock'), 14, '#00b6d6');
     await introBeat(1300); if (run !== introRun) return;
-    q('#iTop').textContent = 'PRA TRANSFORMAR R$ 1 EM'; impact(q('#iGoal'), 24, '#4fd699'); SFX.cash();
+    q('#iTop').textContent = 'PRA PAGAR'; impact(q('#iGoal'), 24, '#e5484d'); SFX.cash();
     await introBeat(1700); if (run !== introRun) return;
     q('#iSteps').classList.add('in');
     const sts = I.querySelectorAll('.i-steps .st, .i-steps .arr');
