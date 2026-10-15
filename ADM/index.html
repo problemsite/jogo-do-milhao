@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ADM · De R$ 1 a R$ 1 Milhão</title>
+<!-- ADM: só abre para administradores (liberado pela Central) -->
+<script src="/trava.js" data-site="jogo-do-milhao" data-modo="adm"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b111c;--card:#121a28;--card2:#182233;--line:#25314a;--ink:#eef3fb;--muted:#8d9ab3;--acc:#00c2e0;--ok:#41d18a;--bad:#ff6b72;--warn:#ffb020;--font:'Plus Jakarta Sans',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:600 14px/1.45 var(--font);min-height:100vh}
+  header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,17,28,.95);backdrop-filter:blur(8px);z-index:5}
+  header h1{font-size:18px;font-weight:800;letter-spacing:.02em}
+  header h1 small{color:var(--muted);font-weight:700;margin-left:8px}
+  .pill{padding:5px 12px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:12.5px;font-weight:800;letter-spacing:.04em}
+  .pill.on{color:var(--ok);border-color:#1f5a3c}.pill.off{color:var(--bad);border-color:#5a1f25}
+  header .sp{flex:1}
+  main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;padding:18px 22px 40px;max-width:1500px;margin:0 auto}
+  @media (max-width:1050px){main{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  h2 .r{margin-left:auto;letter-spacing:0;text-transform:none;font-weight:700}
+  /* tela atual */
+  .scr{display:flex;align-items:center;gap:16px}
+  .scr .ic{width:62px;height:62px;border-radius:16px;background:var(--card2);display:grid;place-items:center;font-size:32px;flex:none}
+  .scr .nm{font-size:24px;font-weight:800;line-height:1.15}
+  .scr .dt{color:var(--muted);font-size:15px;margin-top:3px}
+  .scr.live .ic{box-shadow:0 0 0 3px rgba(0,194,224,.35)}
+  .typing{margin-top:12px;padding:12px 14px;border-radius:12px;background:#0a0f18;border:1px solid var(--line);font-size:19px;font-weight:700;min-height:50px;display:flex;align-items:center;gap:10px}
+  .typing .lb{font-size:11px;color:var(--muted);letter-spacing:.14em;font-weight:800}
+  .typing .tx{flex:1;word-break:break-word}
+  .typing .tx::after{content:'▌';color:var(--acc);animation:blink 1s steps(2) infinite;margin-left:2px}
+  @keyframes blink{50%{opacity:0}}
+  .cardinfo{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--card2);font-size:14px;display:none}
+  .cardinfo.on{display:block}
+  /* números */
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .kv{padding:10px 12px;border-radius:12px;background:var(--card2)}
+  .kv span{display:block;font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:800;text-transform:uppercase}
+  .kv b{display:block;font-size:19px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kv b.g{color:var(--ok)}.kv b.r{color:var(--bad)}.kv b.y{color:var(--warn)}
+  .bar{height:10px;border-radius:10px;background:#0a0f18;overflow:hidden;margin-top:10px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#41d18a,#00c2e0);width:0;transition:width .5s}
+  ul.list{list-style:none;display:flex;flex-direction:column;gap:6px}
+  ul.list li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:10px;background:var(--card2)}
+  ul.list li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ul.list li .m{color:var(--muted);font-size:12.5px;white-space:nowrap}
+  ul.list li b{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pos{color:var(--ok)}.neg{color:var(--bad)}
+  .empty{color:var(--muted);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:13px}
+  .hist{max-height:300px;overflow:auto}
+  /* rota */
+  .route li.done{opacity:.45}
+  .route li.next{outline:2px solid var(--acc);background:#10303a}
+  .route li .k{color:var(--muted);width:22px;flex:none}
+  /* controles */
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .row + .row{margin-top:8px}
+  button{background:#22304a;color:var(--ink);border:1px solid #33435f;border-radius:10px;padding:9px 12px;font:800 13.5px var(--font);cursor:pointer;white-space:nowrap}
+  button:hover{background:#2b3c5c}
+  button.big{font-size:17px;padding:14px 18px;flex:1}
+  button.acc{background:#0b6f82;border-color:#14a3bd}
+  button.acc:hover{background:#0d8299}
+  button.bad{background:#5a1a22;border-color:#8a2a35}
+  button.ok{background:#14532d;border-color:#1f7a44}
+  button.sm{padding:6px 9px;font-size:12.5px}
+  input,select{background:#0a0f18;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:700 14px var(--font);min-width:0}
+  input[type=number]{width:120px}
+  select{max-width:100%}
+  label.ck{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:10px;background:var(--card2);cursor:pointer;font-size:13.5px}
+  .hint{color:var(--muted);font-size:12.5px;font-weight:600;margin-top:6px;line-height:1.4}
+  .lbl{font-size:12px;color:var(--muted);font-weight:800;min-width:110px}
+  #msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#14532d;color:#fff;padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;transition:opacity .3s;pointer-events:none}
+  #msg.on{opacity:1}
+  details summary{cursor:pointer;color:var(--muted);font-weight:800;font-size:12.5px;letter-spacing:.06em;margin:4px 0}
+  .ovr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+  .ovr label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-weight:800;letter-spacing:.06em}
+  .ovr input{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <h1>DE R$ 1 A R$ 1 MILHÃO <small>painel ADM ao vivo</small></h1>
+  <span class="sp"></span>
+  <span class="pill" id="modo">conectando…</span>
+  <span class="pill off" id="online">jogo desconectado</span>
+</header>
+<main>
+  <!-- ======================= AO VIVO ======================= -->
+  <div class="col">
+    <section>
+      <h2>Onde ele está agora <span class="r" id="upd"></span></h2>
+      <div class="scr" id="scr"><div class="ic" id="scrIc">⏳</div><div><div class="nm" id="scrNm">Esperando o jogo abrir…</div><div class="dt" id="scrDt">Abra o jogo no computador dele.</div></div></div>
+      <div class="typing"><span class="lb">DIGITANDO</span><span class="tx" id="typing"></span></div>
+      <div class="cardinfo" id="cardInfo"></div>
+    </section>
+    <section>
+      <h2>Números</h2>
+      <div class="grid" id="nums"></div>
+      <div class="bar"><i id="goalBar"></i></div>
+      <div class="hint" id="goalTxt"></div>
+    </section>
+    <section>
+      <h2>Negócios rodando</h2>
+      <ul class="list" id="biz"></ul>
+      <h2 style="margin-top:12px">Itens dele</h2>
+      <div class="chips" id="assets"></div>
+    </section>
+    <section>
+      <h2>Rota do vídeo <span class="r" id="routeNext"></span></h2>
+      <div class="row" style="margin-bottom:10px"><button class="acc" id="rShow">Mostrar o card do próximo passo</button><button id="rDo">Fazer o próximo (animado)</button><button id="rForce">Próxima busca = próximo passo</button></div>
+      <ul class="list route hist" id="route"></ul>
+      <div class="hint">A rota de referência chega no milhão com umas 11h sobrando. Ele não precisa seguir: é só um guia (e o que já foi feito aparece riscado).</div>
+    </section>
+    <section>
+      <h2>O que ele já fez</h2>
+      <ul class="list hist" id="hist"></ul>
+    </section>
+  </div>
+
+  <!-- ======================= CONTROLES ======================= -->
+  <div class="col">
+    <section>
+      <h2>Controle da tela</h2>
+      <div class="row"><button class="big acc" data-c="advance">▸ AVANÇAR SLIDE</button><button class="big" data-c="undo">↶ DESFAZER ÚLTIMA</button><button class="big" data-c="cancel">✕ FECHAR CARD</button></div>
+      <div class="row"><button data-c="closeOverlay">Fechar janela por cima</button><button data-c="zoomReset">Mapa: voltar</button><button data-c="reopenEnd">Reabrir tela final</button><button data-c="clearEnded">Tirar a tela final</button></div>
+    </section>
+    <section>
+      <h2>Menu e introdução</h2>
+      <div class="row">
+        <label class="ck"><input type="checkbox" id="lockMenu"> Segurar ele no menu até eu liberar</label>
+        <button class="ok" data-c="startIntro">▶ Liberar e começar a introdução</button>
+      </div>
+      <div class="row"><button data-c="skipIntro">Pular introdução</button><button data-c="toMenu">Voltar pro menu</button></div>
+      <div class="hint">Com "segurar" ligado, o menu mostra "Aguardando liberar" no lugar do botão COMEÇAR.</div>
+    </section>
+    <section>
+      <h2>Ações</h2>
+      <div class="row"><select id="act" style="flex:1"></select><input type="number" id="budget" placeholder="orçamento"></div>
+      <div class="row"><button class="acc" id="aShow">Mostrar card</button><button id="aDo">Fazer (animado)</button><button id="aInst">Fazer (instantâneo)</button><button id="aForce">Forçar mesmo sem dinheiro/tempo</button></div>
+      <div class="row"><button id="aNext">Próxima busca mostra essa</button><button id="aNextClear">Limpar</button><span class="hint" id="nextInfo" style="margin:0"></span></div>
+      <div class="row"><input id="typeIn" placeholder="escrever na caixa de texto dele…" style="flex:1"><button id="typeGo">Escrever</button><button id="searchGo">Escrever e enviar</button></div>
+      <div class="hint">"Próxima busca mostra essa": não importa o que ele digitar, o próximo card será essa ação.</div>
+    </section>
+    <section>
+      <h2>Ajustes rápidos</h2>
+      <div class="row"><span class="lbl">Saldo (R$)</span><input type="number" id="vBal"><button id="setBal">Definir</button><input type="number" id="vAdd" placeholder="+ / −" style="width:100px"><button id="addBal">Somar</button></div>
+      <div class="row"><span class="lbl">Dívida (R$)</span><input type="number" id="vDebt"><button id="setDebt">Definir</button></div>
+      <div class="row"><span class="lbl">Tempo restante (h)</span><input type="number" id="vLeft" step="0.5"><button id="setLeft">Definir</button></div>
+      <div class="row"><span class="lbl">Acordado há (h)</span><input type="number" id="vAwake" step="0.5"><button id="setAwake">Definir</button></div>
+      <div class="row"><span class="lbl">Cidade</span><select id="vCity"></select><button id="setCity">Teleportar</button></div>
+      <div class="row" id="assetCtl"></div>
+      <div class="row"><span class="lbl">Liberar de novo</span><select id="vCount" style="flex:1"></select><button id="resetCount">Zerar contagem</button></div>
+    </section>
+    <section>
+      <h2>Configurações do jogo</h2>
+      <div class="row">
+        <span class="lbl">Avançar slides</span><select id="sAdvance"><option value="click">no clique / espaço</option><option value="auto">sozinho</option></select>
+        <label class="ck"><input type="checkbox" id="sIntroAuto"> Introdução anda sozinha</label>
+      </div>
+      <div class="row">
+        <label class="ck"><input type="checkbox" id="sSkip"> Pular animações</label>
+        <label class="ck"><input type="checkbox" id="sMute"> Sem som</label>
+        <label class="ck"><input type="checkbox" id="sCrit"> Mostrar "nesse ritmo… X anos"</label>
+      </div>
+      <div class="row">
+        <span class="lbl">Sono (h)</span><input type="number" id="sSleep" step="0.5" style="width:80px">
+        <span class="lbl" style="min-width:auto">Máx. acordado (h)</span><input type="number" id="sMaxAwake" step="0.5" style="width:80px">
+        <span class="lbl" style="min-width:auto">Comida/dia (R$)</span><input type="number" id="sFood" style="width:80px">
+        <button id="saveSet" class="acc">Salvar</button>
+      </div>
+    </section>
+    <section>
+      <h2>Valores das ações</h2>
+      <div class="row"><select id="oAct" style="flex:1"></select></div>
+      <div class="ovr" id="oFields"></div>
+      <div class="row" style="margin-top:10px"><button class="acc" id="oSave">Salvar valores</button><button id="oReset">Voltar ao original</button><button class="bad" id="oResetAll">Voltar TODAS ao original</button></div>
+      <div class="hint" id="oList"></div>
+    </section>
+    <section>
+      <h2>Cuidado</h2>
+      <div class="row"><button class="bad" id="reset">Resetar o jogo inteiro</button><button id="win">Forçar vitória</button><button id="lose">Forçar derrota</button><button id="reload">Recarregar a página dele</button></div>
+    </section>
+  </div>
+</main>
+<div id="msg"></div>
+<script src="../map-data.js"></script>
+<script src="../data.js"></script>
+<script src="../core.js"></script>
+<script src="../net.js" data-site="jogo-do-milhao"></script>
+<script src="adm.js"></script>
+</body>
+</html>

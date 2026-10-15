@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>De R$ 1 a R$ 1 Milhão</title>
+<meta name="description" content="Você tem R$ 1 e 7 dias para chegar em R$ 1 milhão, do jeito mais realista possível.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2300c2e0'/%3E%3Ccircle cx='50' cy='50' r='32' fill='%23f2c94c' stroke='%230d1726' stroke-width='6'/%3E%3Ctext x='50' y='64' text-anchor='middle' font-family='Arial' font-weight='900' font-size='40' fill='%230d1726'%3E1%3C/text%3E%3C/svg%3E">
+<!-- trava do site principal (Firebase único + liberação pela Central). Aberto direto do PC, roda em modo local. -->
+<script src="/trava.js" data-site="jogo-do-milhao"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="milhao.css?v=2">
+<script>
+  // se algum arquivo do jogo não carregar (faltou subir, nome errado...), mostra na tela qual foi
+  (function () {
+    function show(msg) {
+      var d = document.getElementById('loadErr');
+      if (!d) { d = document.createElement('div'); d.id = 'loadErr'; d.style.cssText = 'position:fixed;left:16px;right:16px;top:16px;z-index:99999;background:#e5484d;color:#fff;font:600 16px/1.5 system-ui,sans-serif;padding:14px 18px;border-radius:12px'; (document.body || document.documentElement).appendChild(d); }
+      d.innerHTML += msg + '<br>';
+    }
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK' || t.tagName === 'IMG')) {
+        var u = String(t.src || t.href);
+        if (u.indexOf('trava.js') >= 0 || u.indexOf('fonts.') >= 0) return;
+        if (u.indexOf(location.host) >= 0 || location.protocol === 'file:') show('Não carregou: <b>' + u.split('/').pop().split('?')[0] + '</b> (confira se esse arquivo foi enviado pro GitHub, com esse nome exato)');
+      } else if (e.message) show('Erro: ' + e.message + (e.filename ? ' — ' + e.filename.split('/').pop().split('?')[0] + ':' + e.lineno : ''));
+    }, true);
+  })();
+</script>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ===== MAPA ===== -->
+    <div id="mapWrap">
+      <div id="mapInner">
+        <img id="mapImg" src="mapa_mundi_em_branco.png" alt="" draggable="false">
+        <canvas id="mapCanvas"></canvas>
+        <svg id="mapSvg" viewBox="0 0 1793 877" preserveAspectRatio="none">
+          <defs>
+            <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0b3b4a" flood-opacity=".22"/>
+            </filter>
+          </defs>
+          <g id="routeLayer"></g>
+          <g id="cityLayer"></g>
+          <g id="dotsLayer"></g>
+          <g id="markerLayer"></g>
+          <g id="fxLayer"></g>
+        </svg>
+      </div>
+    </div>
+    <div id="mapTip"></div>
+
+    <!-- ===== TEMPO (esquerda, em cima) ===== -->
+    <section id="timeBox" class="hud">
+      <div class="lbl">TEMPO RESTANTE</div>
+      <div id="timeValue" class="time-val">7 dias 0h</div>
+      <div id="clockLine" class="clock-line">DIA 1 · SEGUNDA · 08:00</div>
+      <div id="dayPills" class="day-pills"></div>
+      <div id="awake" class="awake"><span id="awakeTxt">Acabou de acordar</span><div class="aw-bar"><i id="awakeFill"></i></div></div>
+      <div id="urgency" class="urgency"></div>
+    </section>
+
+    <!-- ===== NEGÓCIOS E ITENS (esquerda, embaixo do tempo) ===== -->
+    <section id="bizBox" class="hud hidden">
+      <div class="lbl" id="bizHead">SEUS NEGÓCIOS</div>
+      <ul id="bizList"></ul>
+      <div class="lbl" id="assetHead">SEUS ITENS</div>
+      <div id="assetChips"></div>
+    </section>
+
+    <div id="locChip" class="hud"><span class="pin"></span><span>Você está em <b id="locName">Rio de Janeiro</b></span></div>
+    <div id="banner"></div>
+
+    <!-- ===== DINHEIRO (direita, em cima) ===== -->
+    <section id="moneyBox" class="hud">
+      <div class="lbl">SEU DINHEIRO</div>
+      <div id="moneyValue" class="money-val">R$ 1</div>
+      <div id="goalBar" class="goal-bar"><i id="goalFill"></i><span class="gt t1">R$ 1</span><span class="gt t2">100</span><span class="gt t3">10 mil</span><span class="gt t4">1 MI</span></div>
+      <div class="money-sub"><span id="goalPct">0% da meta</span></div>
+      <div id="rateLine" class="rate-line hidden">rendendo <b id="rateVal"></b></div>
+      <div id="debtLine" class="debt-line hidden">dívida <b id="debtVal"></b></div>
+      <div id="mesaWrap"><canvas id="mesa" width="760" height="400"></canvas></div>
+    </section>
+
+    <div id="zoomCtl" class="hud">
+      <button data-z="in" title="Aproximar">+</button>
+      <button data-z="out" title="Afastar">−</button>
+      <button data-z="reset" title="Voltar">↺</button>
+      <button data-z="world" title="Mundo">🌎</button>
+    </div>
+
+    <!-- ===== EXTRATO (direita, embaixo) ===== -->
+    <section id="historyBar" class="hud">
+      <div class="hist-title">EXTRATO</div>
+      <div id="histChips"></div>
+      <button id="histAll" class="link-btn" type="button">VER TUDO →</button>
+    </section>
+
+    <!-- ===== CAIXA DE TEXTO ===== -->
+    <form id="searchForm" autocomplete="off">
+      <div class="search-box">
+        <svg class="search-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="searchInput" type="text" placeholder="O que você vai fazer agora?" spellcheck="false">
+        <button id="searchBtn" type="submit" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </form>
+
+    <div id="toasts"></div>
+
+    <!-- ===== CARD DA AÇÃO ===== -->
+    <div id="modalBack" class="hidden"><div id="modal"></div></div>
+
+    <!-- ===== RESULTADO (slide) ===== -->
+    <div id="moment" class="hidden">
+      <div class="mo-card">
+        <div class="mo-k" id="moK">VOCÊ GANHOU</div>
+        <div class="mo-v" id="moV">R$ 0</div>
+        <div class="mo-s" id="moS"></div>
+        <div class="mo-row">
+          <div id="moArt"></div>
+          <canvas id="bigMesa" width="1280" height="760"></canvas>
+        </div>
+        <div class="mo-r" id="moR"></div>
+        <div class="mo-crit" id="moCrit"></div>
+        <div class="mo-next" id="moNext">clique para continuar ▸</div>
+      </div>
+    </div>
+
+    <!-- ===== NOITE ===== -->
+    <div id="night" class="hidden">
+      <div class="moon"></div>
+      <div class="zz"><span>z</span><span>z</span><span>z</span></div>
+      <div class="n-k">DORMINDO</div>
+      <div class="n-clock" id="nightClock">23:00</div>
+      <div class="n-got" id="nightGot"></div>
+      <div class="n-food" id="nightFood"></div>
+      <div class="mo-next" id="nightNext"></div>
+    </div>
+
+    <div id="vignette"></div>
+    <div id="milestone" class="hidden"><div class="ms-band"><div class="ms-k">MARCO</div><div class="ms-t" id="msT"></div><div class="ms-s" id="msS"></div><div class="ms-bar"><i id="msBar"></i></div></div></div>
+    <div id="overlay" class="hidden"></div>
+
+    <!-- ===== MENU ===== -->
+    <div id="menu" class="hidden">
+      <div class="m-rain" id="mRain"></div>
+      <div class="m-box">
+        <svg class="m-hex" viewBox="0 0 100 100"><path d="M50 6 90 28v44L50 94 10 72V28Z" fill="#fff" stroke="#0d1726" stroke-width="6" stroke-linejoin="round"/><path d="M57 38 48 50M70 46l-6 10M38 62l-1 9" stroke="#0d1726" stroke-width="5" stroke-linecap="round"/></svg>
+        <div class="m-pre">DE <span>R$ 1</span> A</div>
+        <h1 class="m-title">R$ 1 MILHÃO</h1>
+        <div class="m-sub">EM 7 DIAS</div>
+        <button id="startBtn" class="m-btn">COMEÇAR</button>
+        <div id="menuWait" class="m-wait hidden"><span class="dots"><i></i><i></i><i></i></span>Aguardando liberar</div>
+      </div>
+      <button id="muteBtn" class="m-mute" title="Som">🔊</button>
+    </div>
+
+    <!-- ===== INTRODUÇÃO ===== -->
+    <div id="intro" class="hidden"></div>
+
+    <canvas id="confetti"></canvas>
+  </div>
+</div>
+
+<script src="map-data.js?v=2"></script>
+<script src="data.js?v=2"></script>
+<script src="core.js?v=2"></script>
+<script src="problems.js?v=2"></script>
+<script src="art.js?v=2"></script>
+<script src="cube.js?v=2"></script>
+<script src="mesa.js?v=2"></script>
+<script src="net.js?v=2" data-site="jogo-do-milhao"></script>
+<script src="game.js?v=2"></script>
+<script>
+  // chuva de dinheiro do menu (só enfeite)
+  (function () {
+    var r = document.getElementById('mRain'), em = ['🪙', '💵', '🪙', '💸', '🥫', '🧊', '📦'];
+    for (var i = 0; i < 26; i++) { var s = document.createElement('span'); s.textContent = em[i % em.length]; s.style.left = (i * 3.9 + Math.random() * 3) + '%'; s.style.animationDelay = (-Math.random() * 9) + 's'; s.style.animationDuration = (7 + Math.random() * 6) + 's'; s.style.fontSize = (28 + Math.random() * 30) + 'px'; r.appendChild(s); }
+  })();
+</script>
+</body>
+</html>
