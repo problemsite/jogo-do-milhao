@@ -411,8 +411,9 @@
   /*  HUD                                                               */
   /* ------------------------------------------------------------------ */
   const FONT = getComputedStyle(document.body).fontFamily;
-  const hudMesa = MESA.make($('#mesa'), { font: FONT });
-  const bigMesa = MESA.make($('#bigMesa'), { font: FONT });
+  const hudMesa = DINHEIRO.make($('#mesa'), { font: FONT });
+  const bigMesa = DINHEIRO.make($('#bigMesa'), { font: FONT });
+  const bankRows = () => extratoRows().filter(r => Math.abs(r.d) >= 0.5).map(r => ({ name: r.name.replace(/^↳ /, ''), d: r.d }));
   const shown = { balance: S.balance, elapsed: S.elapsed, awake: S.awake };
   const mesaWrap = $('#mesaWrap');
   let mesaTimer = null;
@@ -426,7 +427,49 @@
     if (left < 2880) return 'watch';
     return 'idle';
   }
+  /* ---------------- o Problems no mapa ---------------- */
+  const heroCv = $('#heroCv'); heroCv.width = 1920; heroCv.height = 1080;
+  const hctx = heroCv.getContext('2d');
+  const hero = { visible: true, scale: 1, pose: 'idle', hold: null, icon: null, city: null, react: null, t0: performance.now() };
+  const CAT_ICON = { cans: '🥫', obra: '🧱', flyer: '📄', film: '🎬', bike: '🚲', beach: '🏖️', bottle: '💧', beer: '🍺', grill: '🍢', tent: '⛱️', bags: '🛍️', phone: '📱', doc: '📄', car: '🚗', shop: '🛒', boxes: '📦', ship: '🚢', factory: '🏭', video: '🎥', ads: '📣', star: '⭐', bank: '🏦', house: '🏠', deal: '🤝', clock: '⏳' };
+  function heroLook(a) {
+    if (a.kind === 'espera') return { pose: 'watch', hold: null };
+    if (a.remote) return { pose: a.kind === 'marketing' ? 'idle' : 'idle', hold: 'phone' };
+    if (a.kind === 'estoque') return { pose: 'idle', hold: 'box' };
+    if (a.kind === 'trabalho' || a.kind === 'negocio') return { pose: 'work', hold: null };
+    if (a.kind === 'venda' || a.kind === 'revenda') return { pose: 'sell', hold: null };
+    if (a.kind === 'grande') return { pose: 'point', hold: null };
+    if (a.kind === 'leilao' || a.kind === 'compra') return { pose: 'point', hold: null };
+    return { pose: 'idle', hold: null };
+  }
+  function heroBaseH() { return 74 * clamp(Math.pow(view.z / 2.75, 0.6), 0.55, 1.35); }
+  function heroScreen(cityId) { const c = cityOf(cityId); return { x: view.tx + c.x * KX * view.z, y: view.ty + c.y * KY * view.z }; }
+  function heroScaleTo(target, ms) { const s0 = hero.scale; return tween(ms, k => { hero.scale = s0 + (target - s0) * k; }, easeInOut); }
+  function heroReact(pose, ms) { hero.react = { pose, until: performance.now() + ms }; }
+  function drawHero(now) {
+    hctx.clearRect(0, 0, 1920, 1080);
+    if (!hero.visible || !S.introDone || S.ended) return;
+    const c = cityOf(hero.city || S.city); if (!c) return;
+    const p = heroScreen(hero.city || S.city);
+    const Hpx = heroBaseH() * hero.scale, s = Hpx / 175;
+    if (p.x < -200 || p.x > 2120 || p.y < -100 || p.y > 1400) return;
+    let pose = hero.pose;
+    if (hero.react && now < hero.react.until) pose = hero.react.pose; else hero.react = null;
+    if (pose === 'idle' && !hero.hold) { const left = CORE.left(S); if (left < 1440) pose = 'worried'; else if (S.awake > (SET.maxAwakeH - 3) * 60) pose = 'sad'; }
+    // sombra
+    hctx.fillStyle = 'rgba(13,23,38,.18)'; hctx.beginPath(); hctx.ellipse(p.x, p.y, Hpx * 0.22, Hpx * 0.07, 0, 0, Math.PI * 2); hctx.fill();
+    const t = (now - hero.t0) / 1000;
+    const hands = PROBLEMS.draw(hctx, { ox: p.x, oy: p.y, s, x: 0, y: 0, z: 0, yaw: -0.55, pose, t, hold: hero.hold });
+    if (hero.hold) PROBLEMS.item(hctx, hands, hero.hold, s);
+    if (hero.icon && hands) {
+      const k = Math.sin(t * 4) * Hpx * 0.03;
+      hctx.font = `${Math.round(Hpx * 0.24)}px sans-serif`; hctx.textAlign = 'center'; hctx.textBaseline = 'bottom';
+      hctx.fillText(hero.icon, hands.head[0] + Hpx * 0.2, hands.head[1] - Hpx * 0.04 + k);
+    }
+  }
+
   (function loop(now) {
+    drawHero(now);
     if (mesaWrap.classList.contains('open')) { hudMesa.pose(mesaPose()); hudMesa.draw(now); }
     if (!$('#moment').classList.contains('hidden')) bigMesa.draw(now);
     requestAnimationFrame(loop);
@@ -758,26 +801,38 @@
         floatLabel(cityNow, '− ' + fmtFull(ev.cost));
         ev.trip.mode === 'ônibus' ? SFX.bus() : SFX.travel();
         bal -= ev.cost;
+        hero.visible = false;
         const awEnd = S.awake; // depois da viagem
         const newAw = ev.food != null && ev.min >= SET.sleepH * 60 * 0.85 ? Math.min(8 * 60, Math.max(0, ev.min - SET.sleepH * 60)) : aw + ev.min;
         await Promise.all([animateTravel(cityNow, ev.trip.to, 3400, `+${fmtDur(ev.min)}`, ev.trip.mode), animateClock(el + ev.min, newAw, bal + gotSum - (ev.food || 0), 3400)]);
         bal = bal + gotSum - (ev.food || 0); el += ev.min; aw = newAw; void awEnd;
         if (ev.min >= SET.sleepH * 60 * 0.85) { banner(`${ico} VOCÊ DORMIU NA VIAGEM 😴`); await wait(SET.skipAnim ? 0 : 1100); }
         destCode = null; cityNow = ev.trip.to; $('#locName').textContent = placeName(cityNow);
+        hero.city = cityNow; hero.scale = 0; hero.visible = true; heroReact('wow', 1400); heroScaleTo(1, 500);
         const tmpCity = S.city; S.city = cityNow; renderMapColors(); drawCurrentMarker(); drawCities(); S.city = tmpCity;
         await animateView(viewOn(dest.x, dest.y, Math.max(2.4, view.z), 0.5), 1100);
         banner(null);
       } else { // ação
         if (a.kind === 'sono' || a.kind === 'viagem') continue;
         const c = cityOf(cityNow);
-        if (!a.remote) await animateView(viewOn(c.x, c.y, Math.max(view.z, 2.4), 0.5), 900);
+        hero.city = cityNow;
+        await animateView(viewOn(c.x, c.y, Math.max(view.z, 2.6), 0.62), 900);
+        // o Problems cresce no mapa e faz a ação
+        const look = heroLook(a);
+        hero.pose = look.pose; hero.hold = look.hold; hero.icon = CAT_ICON[a.cat] || null;
+        const big = clamp(330 / heroBaseH(), 2, 6);
+        await heroScaleTo(big, 600);
         if (ev.cost > 0) { floatLabel(cityNow, '− ' + fmtFull(ev.cost)); SFX.pay(); }
         bal -= ev.cost;
         banner(`${DOING[a.kind] || 'FAZENDO'}… <b>+${fmtDur(ev.min).toUpperCase()}</b>`);
         await animateClock(el + ev.min, aw + ev.min, bal + gotSum, ev.min ? 2400 : 600);
         bal += gotSum; el += ev.min; aw += ev.min;
-        await wait(SET.skipAnim ? 0 : 300);
+        if (ev.gain > 0) { hero.pose = 'celebrate'; hero.hold = null; SFX.coin(); }
+        await wait(SET.skipAnim ? 0 : 500);
         banner(null);
+        // volta pro tamanho normal, no lugar onde estava
+        await heroScaleTo(1, 500);
+        hero.pose = 'idle'; hero.hold = null; hero.icon = null;
         bal += ev.gain;
       }
     }
@@ -788,12 +843,14 @@
     if (a.kind !== 'sono' && a.kind !== 'viagem' && a.kind !== 'espera') { await resultSlide(a, q, h, B); setScreen('acao', `Terminando: ${a.name}`); }
     else if (a.kind === 'espera' && gotAll.length) { await moneyToast(gotAll); }
     shown.balance = S.balance; paintTop();
-    if (S.balance > B.balance + 0.5) { SFX.cash(); floatLabel(S.city, '+ ' + fmtFull(S.balance - B.balance), 'float-lbl pos'); }
+    hero.city = null; hero.visible = true; hero.scale = 1; hero.pose = 'idle'; hero.hold = null; hero.icon = null;
+    if (S.balance > B.balance + 0.5) { SFX.cash(); floatLabel(S.city, '+ ' + fmtFull(S.balance - B.balance), 'float-lbl pos'); heroReact('celebrate', 2200); }
+    else if (S.balance < B.balance - 0.5) heroReact('shrug', 1600);
     // pagamentos que caíram e estoques que acabaram
     const payouts = gotAll.filter(g => g.payout);
     for (const p of payouts) await toast(`💰 <b>${esc(p.name)}</b>: caiu ${fmtFull(p.v)}`);
     S.streams.forEach(s => { const was = B.streams.find(x => x.id === s.id); if (s.totalCap && s.left <= 0.5 && (!was || was.left > 0.5)) toast(`📦 <b>${esc(s.name)}</b> esgotou! Vendeu tudo: ${fmtFull(s.paid)}`); });
-    hudMesa.set(S.balance, true); mesaOpen(9000);
+    hudMesa.setRows(bankRows()); hudMesa.set(S.balance, true); mesaOpen(9000);
     await animateView(homeView(), 1300);
     await milestoneCheck(B.balance - (S.debt || 0), CORE.net(S));
     SET.skipAnim = prevSkip;
@@ -832,7 +889,7 @@
     $('#moArt').innerHTML = `<div class="art">${ART.svg(a.cat)}</div><div class="nm">${esc(a.short || a.name)}</div><div class="pl">${esc(a.remote ? 'pelo celular' : placeName(S.city))}</div>`;
     mo.classList.remove('hidden', 'out'); [moR, moC, next, moS].forEach(x => x.classList.remove('on'));
     moC.innerHTML = '';
-    bigMesa.set(B.balance + 0, false); bigMesa.pose('point');
+    bigMesa.setRows(bankRows()); bigMesa.set(B.balance + 0, false); bigMesa.pose('idle');
     let k = 'VOCÊ GANHOU', v = 0, sign = '+', sub = '', anim = true, cls = 'pos';
     const net = (q.gain || 0) - q.cost;
     if (q.gain > 0) { k = a.kind === 'grande' ? 'NEGÓCIO FECHADO' : 'VOCÊ RECEBEU'; v = q.gain; sub = q.cost > 0 ? `Gastou ${fmtFull(q.cost)} · lucro <b>${fmtSigned(net)}</b>` : (q.tripCost ? `Passagem: ${fmtFull(q.tripCost)}` : ''); }
@@ -998,7 +1055,7 @@
       <div class="crit-end">Ganhando salário mínimo (${fmtFull(D.MIN_WAGE)}), juntar R$ 1 milhão levaria uns <b>${String(years).replace('.', ',')} anos</b> sem gastar um centavo.</div></div>${receiptHtml()}</div>`);
     const ol = ov.querySelector('.receipt ol');
     if (ol) { const t0 = performance.now(); (function sc(now) { if (!ol.isConnected) return; ol.scrollTop = ol.scrollHeight; if (now - t0 < 6000) requestAnimationFrame(sc); })(t0); }
-    const endM = MESA.make($('#endMesa'), { font: FONT, shot: 'wide' });
+    const endM = DINHEIRO.make($('#endMesa'), { font: FONT }); endM.setRows(bankRows());
     endM.set(Math.max(0, net), false); endM.pose(win ? 'celebrate' : 'sad');
     (function lp(now) { if (endM.canvas.isConnected) { endM.draw(now); requestAnimationFrame(lp); } })(performance.now());
     busy = false;
@@ -1170,7 +1227,7 @@
   function renderAll() {
     shown.balance = S.balance; shown.elapsed = S.elapsed; shown.awake = S.awake;
     paintTop(); paintStatic(); renderMapColors(); renderMapLayers(); renderHistory(); applyView();
-    hudMesa.set(S.balance, false);
+    hudMesa.setRows(bankRows()); hudMesa.set(S.balance, false);
   }
   function changed() { pushUndo(); }
   function after() { save(); paintStatic(); renderAll(); }

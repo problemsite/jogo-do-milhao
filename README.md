@@ -8,7 +8,8 @@ Jogo de navegador para o vídeo do Problems. É o contrário do Gaste 1 Trilhão
 - `data.js`: **catálogo de ações** (custo, tempo, retorno, requisitos). Edite aqui.
 - `core.js`: regras (tempo, sono, comida, viagem, negócios rendendo)
 - `game.js`: tela, animações, slides, menu e introdução
-- `mesa.js`: a mesa do dinheiro (moedas → notas → maços de R$ 10 mil)
+- `dinheiro.js`: onde o dinheiro aparece: **carteira** (até R$ 999), **mesa** (R$ 1 mil a 99 mil) e **celular com app do banco** (R$ 100 mil pra cima), com o Problems segurando a carteira/celular e reagindo
+- `mesa.js`: a mesa do dinheiro (notas, pacotinhos e maços de R$ 10 mil)
 - `art.js`: ilustrações de cada ação
 - `problems.js`: o Problems de bloquinho (ciano, rosto do Problems0) em 3D, com poses: parado, apontando, uau, dando de ombros, olhando o relógio, preocupado, comemorando, triste
 - `cube.js`: sobrou do Trilhão (pode ficar)

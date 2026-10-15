@@ -30,6 +30,8 @@
       case 'watch': { const look = (t % 5) < 2.4; P.aLx = look ? 1.5 : 0; P.aLy = look ? 0.55 : 0; P.headX = look ? -0.45 : 0; P.headZ = look ? 0.3 : 0; break; }
       case 'worried': { const look = (t % 3) < 1.8; P.aLx = look ? 1.5 : 0.1; P.aLy = look ? 0.55 : 0; P.headX = look ? -0.45 : 0.1; P.aRx = sin(t * 8) * 0.25; P.lLx = sin(t * 12) * 0.12; P.sweat = true; break; }
       case 'celebrate': P.jump = Math.abs(sin(t * 6)) * 3.6; P.aLy = 2.7 + sin(t * 12) * 0.35; P.aRy = -2.7 - sin(t * 12 + Math.PI) * 0.35; P.lLx = sin(t * 12) * 0.35; P.lRx = -sin(t * 12) * 0.35; P.spark = true; break;
+      case 'work': { const w = sin(t * 9); P.aLx = w * 0.9; P.aRx = -w * 0.9; P.lLx = -w * 0.45; P.lRx = w * 0.45; P.jump = Math.abs(sin(t * 9)) * 0.6; P.headX = -0.1; break; }
+      case 'sell': P.aRy = -2.3 + sin(t * 10) * 0.35; P.aRx = 0.2; P.aLx = 0.9; P.aLy = -0.2; P.headZ = sin(t * 3) * 0.3; P.jump = Math.abs(sin(t * 5)) * 0.8; break;
       case 'sad': P.headX = -0.6; P.bodyTilt = -0.12; P.aLx = 0.15; P.aRx = 0.15; P.aLy = -0.06; P.aRy = 0.06; P.bob *= 0.3; break;
       default: P.aLx = sin(t * 2.2) * 0.07; P.aRx = -sin(t * 2.2) * 0.07; P.headZ = (t % 7) > 5.6 ? 0.45 : 0; break;
     }
@@ -51,6 +53,18 @@
   function draw(ctx, o) {
     const H = o.h || 175, u = H / 32;            // cm por "pixel" de skin
     const P = pose(o.pose || 'idle', o.t || 0);
+    // segurando alguma coisa: os braços ficam presos no objeto, o resto reage
+    if (o.hold === 'box') {
+      P.aLx = 1.15; P.aLy = -0.32; P.aRx = 1.15; P.aRy = 0.32; P.headX = Math.min(P.headX, -0.1);
+    } else if (o.hold === 'wallet') {
+      const k = Math.sin((o.t || 0) * 2.4) * 0.05;
+      P.aLx = 1.15 + k; P.aLy = -0.32; P.aRx = 1.15 + k; P.aRy = 0.32;
+      if (o.pose !== 'wow' && o.pose !== 'celebrate') P.headX = Math.min(P.headX, -0.28);
+    } else if (o.hold === 'phone') {
+      P.aRx = 1.3 + Math.sin((o.t || 0) * 2) * 0.04; P.aRy = 0.42;
+      if (o.pose !== 'celebrate' && o.pose !== 'wow') { P.aLx = Math.sin((o.t || 0) * 2.2) * 0.07; P.aLy = 0; }
+      if (o.pose !== 'wow' && o.pose !== 'celebrate') { P.headX = Math.min(P.headX, -0.3); P.headZ = 0.2; }
+    }
     const yaw = o.yaw || 0;
     // projeção iso (mesma da mesa)
     const proj = p => [o.ox + (p[0] - p[1]) * o.s * C30, o.oy + (p[0] + p[1]) * o.s * 0.5 - p[2] * o.s];
@@ -77,6 +91,9 @@
     // braços (pivô no ombro, pendurados)
     part(4, 4, 12, [0, 0, -10], add(shoulder, [-6, 0, -2]), { x: P.aLx, y: P.aLy }, 'arm');
     part(4, 4, 12, [0, 0, -10], add(shoulder, [6, 0, -2]), { x: P.aRx, y: P.aRy }, 'arm');
+    // onde ficam as mãos (pra desenhar o objeto que ele segura)
+    const handAt = (pivot, rot) => { let q = [0, 0, -9.5]; q = rotX(q, rot.x || 0); q = rotY(q, rot.y || 0); return add(q, pivot); };
+    const hL = handAt(add(shoulder, [-6, 0, -2]), { x: P.aLx, y: P.aLy }), hR = handAt(add(shoulder, [6, 0, -2]), { x: P.aRx, y: P.aRy });
     // cabeça (pivô no pescoço)
     part(8, 8, 8, [0, 0, 0], shoulder, { x: P.headX + tilt, z: P.headZ }, 'head', true);
 
@@ -125,6 +142,8 @@
       });
     }
     ctx.restore();
+    const W2 = p => { const q = toWorld(p); q[2] += lift; return proj(q); };
+    return { handL: W2(hL), handR: W2(hR), head: headTop, headSize: hs };
   }
   function shade(l) {
     // ciano: mistura entre sombra e luz
@@ -166,5 +185,30 @@
       <rect x="-6" y="-37" width="1.7" height="4" fill="#0d1726"/><rect x="-4.3" y="-33.9" width="1.7" height="1.7" fill="#0d1726"/></g>`;
   }
 
-  window.PROBLEMS = { draw, svg };
+  // desenha o objeto que ele segura, a partir das mãos que o draw() devolveu
+  function item(ctx, hands, kind, s) {
+    if (!hands) return;
+    const u = s * 175 / 32, K2 = '#0d1726';
+    const R = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    ctx.save(); ctx.lineWidth = Math.max(1.2, u * 0.3); ctx.strokeStyle = K2;
+    if (kind === 'box' || kind === 'wallet') {
+      const mx = (hands.handL[0] + hands.handR[0]) / 2, my = (hands.handL[1] + hands.handR[1]) / 2;
+      ctx.translate(mx, my); ctx.rotate(-0.1);
+      if (kind === 'box') {
+        ctx.fillStyle = '#e8c49a'; R(-u * 5, -u * 4.5, u * 10, u * 7, u * 0.4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#d6a873'; ctx.fillRect(-u * 1, -u * 4.5, u * 2, u * 7);
+      } else {
+        ctx.fillStyle = '#8a5a3b'; R(-u * 4.2, -u * 2.6, u * 8.4, u * 5, u * 0.8); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#7db8e3'; ctx.fillRect(u * 0.4, -u * 3.4, u * 3.2, u * 1.6); ctx.fillStyle = '#9a6844'; ctx.fillRect(u * 0.2, -u * 2.2, u * 3.6, u * 4.2);
+      }
+    } else if (kind === 'phone') {
+      const [hx, hy] = hands.handR;
+      ctx.translate(hx, hy - u * 1.6); ctx.rotate(0.2);
+      ctx.fillStyle = K2; R(-u * 1.9, -u * 3.4, u * 3.8, u * 6.8, u * 0.7); ctx.fill();
+      ctx.fillStyle = '#00c2e0'; R(-u * 1.5, -u * 3, u * 3, u * 6, u * 0.45); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  window.PROBLEMS = { draw, svg, item };
 })();

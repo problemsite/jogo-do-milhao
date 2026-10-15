@@ -228,3 +228,4 @@
 .hist-modal .btn{flex:none;height:52px;min-height:52px}
 .hist-modal ol{flex:1;min-height:0}
 #banner{font-size:26px;max-width:1080px;overflow:hidden;text-overflow:ellipsis}
+#heroCv{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;z-index:8}
